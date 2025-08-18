@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8" />
@@ -74,8 +74,8 @@
   <label>Make</label>
   <input type="text" id="make" placeholder="Make / Model">
 
-  <label>Slipper Capacity</label>
-  <input type="text" id="slipperCapacity" placeholder="Slipper Capacity">
+  <label>Sleeper Capacity</label>
+  <input type="text" id="slipperCapacity" placeholder="Sleeper Capacity">
 
   <label>Permit Date</label>
   <input type="date" id="permitDate">
@@ -94,6 +94,9 @@
 
   <label>PUC Expiry</label>
   <input type="date" id="pucDate">
+
+  <label>AITP Tax Expiry</label>
+  <input type="date" id="aitpDate">
 
   <button class="btn" onclick="saveVehicle()">💾 Save</button>
   <button class="btn btn-secondary" onclick="showScreen('homeScreen')">⬅ Back</button>
@@ -146,7 +149,7 @@
   function resetForm(){
     ["vehicleNo","owner","ownerMobile","chassisNo","engineNo","make",
      "slipperCapacity","permitDate","insuranceDate","fitnessDate",
-     "authorizationDate","homeTaxDate","pucDate"].forEach(id => document.getElementById(id).value = "");
+     "authorizationDate","homeTaxDate","pucDate","aitpDate"].forEach(id => document.getElementById(id).value = "");
   }
 
   function fillForm(v){
@@ -163,6 +166,7 @@
     document.getElementById("authorizationDate").value = v.authorizationDate || "";
     document.getElementById("homeTaxDate").value = v.homeTaxDate || "";
     document.getElementById("pucDate").value = v.pucDate || "";
+    document.getElementById("aitpDate").value = v.aitpDate || "";
   }
 
   function saveToStorage(){
@@ -183,7 +187,8 @@
       fitnessDate: document.getElementById("fitnessDate").value,
       authorizationDate: document.getElementById("authorizationDate").value,
       homeTaxDate: document.getElementById("homeTaxDate").value,
-      pucDate: document.getElementById("pucDate").value
+      pucDate: document.getElementById("pucDate").value,
+      aitpDate: document.getElementById("aitpDate").value
     };
 
     if(!v.vehicleNo){ alert("Vehicle No required"); return; }
@@ -211,7 +216,7 @@
   function showThisMonthExpiry(){
     const now = new Date(), m = now.getMonth(), y = now.getFullYear();
     const results = vehicles.filter(v => {
-      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate, v.pucDate].some(ds=>{
+      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate, v.pucDate, v.aitpDate].some(ds=>{
         if(!ds) return false;
         const d = new Date(ds);
         return d.getMonth()===m && d.getFullYear()===y;
@@ -224,7 +229,7 @@
   function showExpired(){
     const now = new Date();
     const results = vehicles.filter(v => {
-      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate, v.pucDate].some(ds=>{
+      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate, v.pucDate, v.aitpDate].some(ds=>{
         if(!ds) return false;
         const d = new Date(ds);
         return d < now;
@@ -240,16 +245,21 @@
     return d.getMonth()===t.getMonth() && d.getFullYear()===t.getFullYear();
   }
 
+  function highlightCell(ds){
+    if(!ds) return "";
+    const d = new Date(ds), now=new Date();
+    return (d < now) ? "expired" : "";
+  }
+
   function displayTable(data, elId, highlight){
     let html = `<table>
       <tr>
         <th>Vehicle No</th><th>Owner</th><th>Mobile</th><th>Chassis</th><th>Engine</th>
-        <th>Make</th><th>Slipper</th><th>Permit</th>
-        <th>Insurance</th><th>Fitness</th><th>Authorization</th><th>Home Tax</th><th>PUC</th><th>Action</th>
+        <th>Make</th><th>Sleeper</th><th>Permit</th>
+        <th>Insurance</th><th>Fitness</th><th>Authorization</th><th>Home Tax</th><th>PUC</th><th>AITP Tax</th><th>Action</th>
       </tr>`;
 
     data.forEach(v=>{
-      const expiredClass = highlight ? "expired" : "";
       const types = [];
       if(isDateThisMonth(v.permitDate)) types.push("Permit");
       if(isDateThisMonth(v.insuranceDate)) types.push("Insurance");
@@ -257,6 +267,7 @@
       if(isDateThisMonth(v.authorizationDate)) types.push("Authorization");
       if(isDateThisMonth(v.homeTaxDate)) types.push("Home Tax");
       if(isDateThisMonth(v.pucDate)) types.push("PUC");
+      if(isDateThisMonth(v.aitpDate)) types.push("AITP Tax");
 
       const msg = `Sir, आपकी बस नं. ${v.vehicleNo} की ${types.join(", ")} की अवधि खत्म हो रही है। कृपया ध्यान दें और हमसे संपर्क करें।`;
       let mobile = v.ownerMobile || "";
@@ -267,7 +278,7 @@
 
       const idx = vehicles.indexOf(v);
 
-      html += `<tr class="${expiredClass}"> 
+      html += `<tr> 
         <td>${v.vehicleNo||""}</td>
         <td>${v.owner||""}</td>
         <td>${v.ownerMobile||""}</td>
@@ -275,12 +286,13 @@
         <td>${v.engineNo||""}</td>
         <td>${v.make||""}</td>
         <td>${v.slipperCapacity||""}</td>
-        <td>${v.permitDate||""}</td>
-        <td>${v.insuranceDate||""}</td>
-        <td>${v.fitnessDate||""}</td>
-        <td>${v.authorizationDate||""}</td>
-        <td>${v.homeTaxDate||""}</td>
-        <td>${v.pucDate||""}</td>
+        <td class="${highlightCell(v.permitDate)}">${v.permitDate||""}</td>
+        <td class="${highlightCell(v.insuranceDate)}">${v.insuranceDate||""}</td>
+        <td class="${highlightCell(v.fitnessDate)}">${v.fitnessDate||""}</td>
+        <td class="${highlightCell(v.authorizationDate)}">${v.authorizationDate||""}</td>
+        <td class="${highlightCell(v.homeTaxDate)}">${v.homeTaxDate||""}</td>
+        <td class="${highlightCell(v.pucDate)}">${v.pucDate||""}</td>
+        <td class="${highlightCell(v.aitpDate)}">${v.aitpDate||""}</td>
         <td class="actions">
           <a class="wa" href="${waURL}" target="_blank">WhatsApp</a>
           <button class="upd" onclick="editVehicle(${idx})">Update</button>
@@ -290,7 +302,7 @@
     });
 
     if(data.length===0){
-      html += `<tr><td colspan="14" class="row-muted">No records found</td></tr>`;
+      html += `<tr><td colspan="15" class="row-muted">No records found</td></tr>`;
     }
 
     html += `</table>`;
@@ -336,7 +348,7 @@
 
     const headers = [];
     document.querySelectorAll("#expiryResults table th").forEach((th, i) => {
-      if(i < 13) headers.push(th.innerText);
+      if(i < 14) headers.push(th.innerText);
     });
 
     doc.autoTable({
@@ -364,3 +376,5 @@
 </script>
 </body>
 </html>
+
+
