@@ -35,6 +35,7 @@
   }
   .wa{ background:#25D366; color:#fff; text-decoration:none; display:inline-block; }
   .upd{ background:#ff9800; color:#fff; }
+  .del{ background:#dc3545; color:#fff; }
   .footer{ margin-top:15px; font-size:11px; color:#555; }
   .row-muted{ color:#555; font-size:11px; }
 </style>
@@ -47,6 +48,7 @@
   <button class="btn" onclick="showScreen('searchScreen')">🔍 Search</button>
   <button class="btn" onclick="startNew()">➕ Add New Vehicle</button>
   <button class="btn" onclick="showThisMonthExpiry()">📅 This Month Expiry</button>
+  <button class="btn btn-danger" onclick="showExpired()">⚠ Expired Vehicles</button>
   <div class="footer">Developed by @Aditya Vadode</div>
 </div>
 
@@ -61,7 +63,7 @@
   <input type="text" id="owner" placeholder="Owner Name">
 
   <label>Owner Mobile Number</label>
-  <input type="tel" id="ownerMobile" placeholder="91XXXXXXXXXX">
+  <input type="tel" id="ownerMobile" placeholder="Enter Mobile Number">
 
   <label>Chassis No</label>
   <input type="text" id="chassisNo" placeholder="Chassis No">
@@ -90,6 +92,9 @@
   <label>Home Tax Expiry</label>
   <input type="date" id="homeTaxDate">
 
+  <label>PUC Expiry</label>
+  <input type="date" id="pucDate">
+
   <button class="btn" onclick="saveVehicle()">💾 Save</button>
   <button class="btn btn-secondary" onclick="showScreen('homeScreen')">⬅ Back</button>
 </div>
@@ -106,10 +111,14 @@
 <div class="container" id="expiryScreen" style="display:none;">
   <h1>This Month Expiry</h1>
   <div id="expiryResults"></div>
-
-  <!-- PDF Share Button -->
   <button class="btn btn-warning" onclick="shareExpiryPDF()">📤 Share PDF on WhatsApp</button>
+  <button class="btn btn-secondary" onclick="showScreen('homeScreen')">⬅ Back</button>
+</div>
 
+<!-- Expired Vehicles -->
+<div class="container" id="expiredScreen" style="display:none;">
+  <h1>⚠ Expired Vehicles</h1>
+  <div id="expiredResults"></div>
   <button class="btn btn-secondary" onclick="showScreen('homeScreen')">⬅ Back</button>
 </div>
 
@@ -137,7 +146,7 @@
   function resetForm(){
     ["vehicleNo","owner","ownerMobile","chassisNo","engineNo","make",
      "slipperCapacity","permitDate","insuranceDate","fitnessDate",
-     "authorizationDate","homeTaxDate"].forEach(id => document.getElementById(id).value = "");
+     "authorizationDate","homeTaxDate","pucDate"].forEach(id => document.getElementById(id).value = "");
   }
 
   function fillForm(v){
@@ -153,6 +162,7 @@
     document.getElementById("fitnessDate").value = v.fitnessDate || "";
     document.getElementById("authorizationDate").value = v.authorizationDate || "";
     document.getElementById("homeTaxDate").value = v.homeTaxDate || "";
+    document.getElementById("pucDate").value = v.pucDate || "";
   }
 
   function saveToStorage(){
@@ -172,7 +182,8 @@
       insuranceDate: document.getElementById("insuranceDate").value,
       fitnessDate: document.getElementById("fitnessDate").value,
       authorizationDate: document.getElementById("authorizationDate").value,
-      homeTaxDate: document.getElementById("homeTaxDate").value
+      homeTaxDate: document.getElementById("homeTaxDate").value,
+      pucDate: document.getElementById("pucDate").value
     };
 
     if(!v.vehicleNo){ alert("Vehicle No required"); return; }
@@ -197,11 +208,10 @@
     displayTable(results, "searchResults", false);
   }
 
-  // ✅ Permit को भी शामिल किया गया
   function showThisMonthExpiry(){
     const now = new Date(), m = now.getMonth(), y = now.getFullYear();
     const results = vehicles.filter(v => {
-      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate].some(ds=>{
+      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate, v.pucDate].some(ds=>{
         if(!ds) return false;
         const d = new Date(ds);
         return d.getMonth()===m && d.getFullYear()===y;
@@ -211,14 +221,17 @@
     showScreen('expiryScreen');
   }
 
-  // ✅ Permit को भी highlight logic में जोड़ा
-  function isExpiredThisMonth(v){
-    const t = new Date(), m=t.getMonth(), y=t.getFullYear();
-    return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate].some(ds=>{
-      if(!ds) return false;
-      const d = new Date(ds);
-      return d.getMonth()===m && d.getFullYear()===y;
+  function showExpired(){
+    const now = new Date();
+    const results = vehicles.filter(v => {
+      return [v.permitDate, v.insuranceDate, v.fitnessDate, v.authorizationDate, v.homeTaxDate, v.pucDate].some(ds=>{
+        if(!ds) return false;
+        const d = new Date(ds);
+        return d < now;
+      });
     });
+    displayTable(results, "expiredResults", true);
+    showScreen('expiredScreen');
   }
 
   function isDateThisMonth(ds){
@@ -232,22 +245,24 @@
       <tr>
         <th>Vehicle No</th><th>Owner</th><th>Mobile</th><th>Chassis</th><th>Engine</th>
         <th>Make</th><th>Slipper</th><th>Permit</th>
-        <th>Insurance</th><th>Fitness</th><th>Authorization</th><th>Home Tax</th><th>Action</th>
+        <th>Insurance</th><th>Fitness</th><th>Authorization</th><th>Home Tax</th><th>PUC</th><th>Action</th>
       </tr>`;
 
     data.forEach(v=>{
-      const expiredClass = highlight && isExpiredThisMonth(v) ? "expired" : "";
+      const expiredClass = highlight ? "expired" : "";
       const types = [];
-      // ✅ Permit को मैसेज टैग में भी जोड़ा
       if(isDateThisMonth(v.permitDate)) types.push("Permit");
       if(isDateThisMonth(v.insuranceDate)) types.push("Insurance");
       if(isDateThisMonth(v.fitnessDate)) types.push("Fitness");
       if(isDateThisMonth(v.authorizationDate)) types.push("Authorization");
       if(isDateThisMonth(v.homeTaxDate)) types.push("Home Tax");
+      if(isDateThisMonth(v.pucDate)) types.push("PUC");
 
       const msg = `Sir, आपकी बस नं. ${v.vehicleNo} की ${types.join(", ")} की अवधि खत्म हो रही है। कृपया ध्यान दें और हमसे संपर्क करें।`;
-      const waURL = v.ownerMobile
-        ? `https://wa.me/${encodeURIComponent(v.ownerMobile)}?text=${encodeURIComponent(msg)}`
+      let mobile = v.ownerMobile || "";
+      if(mobile && !mobile.startsWith("91")) mobile = "91"+mobile;
+      const waURL = mobile
+        ? `https://wa.me/${encodeURIComponent(mobile)}?text=${encodeURIComponent(msg)}`
         : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
       const idx = vehicles.indexOf(v);
@@ -265,15 +280,17 @@
         <td>${v.fitnessDate||""}</td>
         <td>${v.authorizationDate||""}</td>
         <td>${v.homeTaxDate||""}</td>
+        <td>${v.pucDate||""}</td>
         <td class="actions">
           <a class="wa" href="${waURL}" target="_blank">WhatsApp</a>
           <button class="upd" onclick="editVehicle(${idx})">Update</button>
+          <button class="del" onclick="deleteVehicle(${idx})">Delete</button>
         </td>
       </tr>`;
     });
 
     if(data.length===0){
-      html += `<tr><td colspan="13" class="row-muted">No records found</td></tr>`;
+      html += `<tr><td colspan="14" class="row-muted">No records found</td></tr>`;
     }
 
     html += `</table>`;
@@ -289,7 +306,15 @@
     showScreen('addScreen');
   }
 
-  // Share PDF Function
+  function deleteVehicle(index){
+    if(confirm("Are you sure to delete this vehicle?")){
+      vehicles.splice(index,1);
+      saveToStorage();
+      alert("Vehicle Deleted!");
+      searchVehicle();
+    }
+  }
+
   function shareExpiryPDF(){
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -311,7 +336,7 @@
 
     const headers = [];
     document.querySelectorAll("#expiryResults table th").forEach((th, i) => {
-      if(i < 12) headers.push(th.innerText);
+      if(i < 13) headers.push(th.innerText);
     });
 
     doc.autoTable({
@@ -321,7 +346,6 @@
       styles: { fontSize: 8 }
     });
 
-    // PDF को Blob में बदलकर शेयर करना
     doc.output("blob").arrayBuffer().then(buffer => {
       const file = new File([buffer], "This_Month_Expiry.pdf", { type: "application/pdf" });
       if(navigator.share){
