@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8" />
@@ -260,16 +260,38 @@
       </tr>`;
 
     data.forEach(v=>{
-      const types = [];
-      if(isDateThisMonth(v.permitDate)) types.push("Permit");
-      if(isDateThisMonth(v.insuranceDate)) types.push("Insurance");
-      if(isDateThisMonth(v.fitnessDate)) types.push("Fitness");
-      if(isDateThisMonth(v.authorizationDate)) types.push("Authorization");
-      if(isDateThisMonth(v.homeTaxDate)) types.push("Home Tax");
-      if(isDateThisMonth(v.pucDate)) types.push("PUC");
-      if(isDateThisMonth(v.aitpDate)) types.push("AITP Tax");
+      const now = new Date();
 
-      const msg = `Sir, आपकी बस नं. ${v.vehicleNo} की ${types.join(", ")} की अवधि खत्म हो रही है। कृपया ध्यान दें और हमसे संपर्क करें।`;
+      function checkStatus(label, ds){
+        if(!ds) return null;
+        const d = new Date(ds);
+        let dateStr = d.toLocaleDateString("hi-IN");
+        if(d < now){
+          return `${label} ${dateStr} को खत्म हो चुकी है`;
+        } else if(d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear()){
+          return `${label} ${dateStr} को खत्म होने वाली है`;
+        }
+        return null;
+      }
+
+      let messages = [];
+      let fields = [
+        ["Permit", v.permitDate],
+        ["Insurance", v.insuranceDate],
+        ["Fitness", v.fitnessDate],
+        ["Authorization", v.authorizationDate],
+        ["Home Tax", v.homeTaxDate],
+        ["PUC", v.pucDate],
+        ["AITP Tax", v.aitpDate]
+      ];
+
+      fields.forEach(([label,ds])=>{
+        const msg = checkStatus(label, ds);
+        if(msg) messages.push(msg);
+      });
+
+      let msg = messages.length > 0 ? `Sir, आपकी बस नं. ${v.vehicleNo} की ${messages.join(" और ")}। कृपया ध्यान दें।` : `Sir, आपकी बस नं. ${v.vehicleNo} की कोई अपडेटेड एक्सपायरी नहीं है।`;
+
       let mobile = v.ownerMobile || "";
       if(mobile && !mobile.startsWith("91")) mobile = "91"+mobile;
       const waURL = mobile
@@ -376,5 +398,3 @@
 </script>
 </body>
 </html>
-
-
