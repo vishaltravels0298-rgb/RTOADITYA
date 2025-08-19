@@ -267,9 +267,9 @@
         const d = new Date(ds);
         let dateStr = d.toLocaleDateString("hi-IN");
         if(d < now){
-          return `${label} ${dateStr} को खत्म हो चुकी है`;
+          return `${label} ${dateStr} को खत्म हो चुका है`;
         } else if(d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear()){
-          return `${label} ${dateStr} को खत्म होने वाली है`;
+          return `${label} ${dateStr} को खत्म होने वाला है`;
         }
         return null;
       }
@@ -290,7 +290,7 @@
         if(msg) messages.push(msg);
       });
 
-      let msg = messages.length > 0 ? `Sir, आपकी बस नं. ${v.vehicleNo} की ${messages.join(" और ")}। कृपया ध्यान दें।` : `Sir, आपकी बस नं. ${v.vehicleNo} की कोई अपडेटेड एक्सपायरी नहीं है।`;
+      let msg = messages.length > 0 ? `श्रीमान जी आप के वाहन नं. ${v.vehicleNo} की ${messages.join(" और ")}। कृपया दंड और जोखिम से बचने के लिए और RENEW करने के लिए मुझसे संपर्क करें धन्यवाद। ` : `श्रीमान जी आप के वाहन नं. ${v.vehicleNo} की कोई अपडेटेड एक्सपायरी नहीं है।`;
 
       let mobile = v.ownerMobile || "";
       if(mobile && !mobile.startsWith("91")) mobile = "91"+mobile;
@@ -398,3 +398,4 @@
 </script>
 </body>
 </html>
+
