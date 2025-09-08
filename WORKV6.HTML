@@ -29,7 +29,8 @@
   table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; background:#fff; border-radius:8px; overflow:hidden; }
   th,td{ border:1px solid #ddd; padding:6px; vertical-align:top; }
   th{ background:#007bff; color:#fff; font-size:12px; position:sticky; top:0; }
-  .expired{ background:#ffcccc; }
+  .expired{ background:#ffcccc; }     /* Expired = लाल */
+  .thisMonth{ background:#fff3b0; }   /* इस महीने expiring = पीला */
   .actions a,.actions button{
     font-size:11px; padding:5px 8px; border:none; border-radius:6px; margin:2px; cursor:pointer;
   }
@@ -239,16 +240,14 @@
     showScreen('expiredScreen');
   }
 
-  function isDateThisMonth(ds){
-    if(!ds) return false;
-    const d = new Date(ds), t=new Date();
-    return d.getMonth()===t.getMonth() && d.getFullYear()===t.getFullYear();
-  }
-
   function highlightCell(ds){
     if(!ds) return "";
     const d = new Date(ds), now=new Date();
-    return (d < now) ? "expired" : "";
+    if(d < now) return "expired"; // लाल
+    if(d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear()){
+      return "thisMonth"; // पीला
+    }
+    return "";
   }
 
   function displayTable(data, elId, highlight){
@@ -260,43 +259,8 @@
       </tr>`;
 
     data.forEach(v=>{
-      const now = new Date();
-
-      function checkStatus(label, ds){
-        if(!ds) return null;
-        const d = new Date(ds);
-        let dateStr = d.toLocaleDateString("hi-IN");
-        if(d < now){
-          return `${label} ${dateStr} को खत्म हो चुका है`;
-        } else if(d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear()){
-          return `${label} ${dateStr} को खत्म होने वाला है`;
-        }
-        return null;
-      }
-
-      let messages = [];
-      let fields = [
-        ["Permit", v.permitDate],
-        ["Insurance", v.insuranceDate],
-        ["Fitness", v.fitnessDate],
-        ["Authorization", v.authorizationDate],
-        ["Home Tax", v.homeTaxDate],
-        ["PUC", v.pucDate],
-        ["AITP Tax", v.aitpDate]
-      ];
-
-      fields.forEach(([label,ds])=>{
-        const msg = checkStatus(label, ds);
-        if(msg) messages.push(msg);
-      });
-
-      let msg = messages.length > 0 ? `श्रीमान जी आप के वाहन नं. ${v.vehicleNo} का ${messages.join(" और ")}। कृपया दंड और जोखिम से बचने के लिए और RENEW करने के लिए मुझसे संपर्क करें धन्यवाद। ` : `श्रीमान जी आप के वाहन नं. ${v.vehicleNo} का कोई अपडेटेड एक्सपायरी नहीं है।`;
-
       let mobile = v.ownerMobile || "";
       if(mobile && !mobile.startsWith("91")) mobile = "91"+mobile;
-      const waURL = mobile
-        ? `https://wa.me/${encodeURIComponent(mobile)}?text=${encodeURIComponent(msg)}`
-        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
       const idx = vehicles.indexOf(v);
 
@@ -316,7 +280,7 @@
         <td class="${highlightCell(v.pucDate)}">${v.pucDate||""}</td>
         <td class="${highlightCell(v.aitpDate)}">${v.aitpDate||""}</td>
         <td class="actions">
-          <a class="wa" href="${waURL}" target="_blank">WhatsApp</a>
+          <a class="wa" href="https://wa.me/${mobile}?text=आपके वाहन ${v.vehicleNo} की expiry check करें" target="_blank">WhatsApp</a>
           <button class="upd" onclick="editVehicle(${idx})">Update</button>
           <button class="del" onclick="deleteVehicle(${idx})">Delete</button>
         </td>
@@ -398,6 +362,3 @@
 </script>
 </body>
 </html>
-
-
-
